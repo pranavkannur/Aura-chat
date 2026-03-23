@@ -5,19 +5,22 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
+const corsOptions = {
+  origin: ["http://localhost:5173", "http://localhost:5174"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+};
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173", // Vite default port
-    methods: ["GET", "POST"]
-  }
+  cors: corsOptions
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
@@ -32,31 +35,28 @@ mongoose.connect(process.env.MONGO_URI)
 // Socket.io logic
 let onlineUsers = {}; // { userId: socketId }
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+// Function to get receiver's socket ID
+const getReceiverSocketId = (receiverId) => {
+  return onlineUsers[receiverId];
+};
 
-  socket.on('join', (userId) => {
+io.on('connection', (socket) => {
+  const userId = socket.handshake.query.userId;
+  if (userId) {
     onlineUsers[userId] = socket.id;
     io.emit('getOnlineUsers', Object.keys(onlineUsers));
-  });
-
-  socket.on('sendMessage', (data) => {
-    const { receiverId } = data;
-    if (onlineUsers[receiverId]) {
-      io.to(onlineUsers[receiverId]).emit('getMessage', data);
-    }
-  });
+  }
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    for (let userId in onlineUsers) {
-      if (onlineUsers[userId] === socket.id) {
-        delete onlineUsers[userId];
-        break;
-      }
+    if (userId) {
+      delete onlineUsers[userId];
+      io.emit('getOnlineUsers', Object.keys(onlineUsers));
     }
-    io.emit('getOnlineUsers', Object.keys(onlineUsers));
   });
 });
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+module.exports = { app, server, io, getReceiverSocketId };
+
+if (require.main === module) {
+  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}

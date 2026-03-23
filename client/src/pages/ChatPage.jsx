@@ -62,32 +62,30 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (socket) {
-      socket.on('getMessage', (data) => {
+      const handleNewMessage = (data) => {
         if (selectedUser && data.senderId === selectedUser._id) {
           setMessages((prev) => [...prev, data]);
         }
-      });
+      };
+      
+      socket.on('newMessage', handleNewMessage);
+      return () => socket.off('newMessage', handleNewMessage);
     }
-    return () => socket?.off('getMessage');
   }, [socket, selectedUser]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedUser) return;
 
-    const messageData = {
-      receiverId: selectedUser._id,
-      content: newMessage,
-      senderId: user._id,
-      createdAt: new Date().toISOString()
-    };
-
     try {
-      await axios.post('http://localhost:5001/api/messages', messageData, {
+      const { data } = await axios.post('http://localhost:5001/api/messages', {
+        receiverId: selectedUser._id,
+        content: newMessage
+      }, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
-      socket.emit('sendMessage', messageData);
-      setMessages((prev) => [...prev, messageData]);
+      
+      setMessages((prev) => [...prev, data]);
       setNewMessage('');
     } catch (err) {
       console.error('Failed to send message', err);
