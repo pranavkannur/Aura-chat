@@ -1,0 +1,25 @@
+# Node modules
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Logs
+*.log*
+server/*.log*
+client/*.log*
+
+# Database data
+mongodb_data/
+mongodb_test/
+
+# Environment variables
+.env
+server/.env
+client/.env
+
+# Build outputs
+dist/
+dist-ssr/
+
+# OS files
+.DS_Store
