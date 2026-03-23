@@ -1,5 +1,5 @@
 const Message = require('../models/Message');
-const { getReceiverSocketId, io } = require('../index');
+const { getReceiverSocketId, io } = require('../socket');
 
 exports.sendMessage = async (req, res) => {
   const { receiverId, content } = req.body;
