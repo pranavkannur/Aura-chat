@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import axios from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { LogOut, Send, User as UserIcon, Search, X } from 'lucide-react';
@@ -17,8 +17,8 @@ const ChatPage = () => {
   const fetchUsers = useCallback(async (query = '') => {
     try {
       const endpoint = query 
-        ? `http://localhost:5001/api/auth/search?query=${query}`
-        : 'http://localhost:5001/api/auth/users';
+        ? `/api/auth/search?query=${query}`
+        : '/api/auth/users';
       
       const { data } = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${user.token}` }
@@ -49,7 +49,7 @@ const ChatPage = () => {
     const fetchMessages = async () => {
       if (!selectedUser) return;
       try {
-        const { data } = await axios.get(`http://localhost:5001/api/messages/${selectedUser._id}`, {
+        const { data } = await axios.get(`/api/messages/${selectedUser._id}`, {
           headers: { Authorization: `Bearer ${user.token}` }
         });
         setMessages(data);
@@ -78,7 +78,7 @@ const ChatPage = () => {
     if (!newMessage.trim() || !selectedUser) return;
 
     try {
-      const { data } = await axios.post('http://localhost:5001/api/messages', {
+      const { data } = await axios.post('/api/messages', {
         receiverId: selectedUser._id,
         content: newMessage
       }, {
