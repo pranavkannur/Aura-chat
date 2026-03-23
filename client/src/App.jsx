@@ -8,12 +8,14 @@ import ChatPage from './pages/ChatPage';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  console.log('ProtectedRoute:', { user, loading });
   if (loading) return <div className="h-screen bg-aura-dark flex items-center justify-center text-aura-light">Loading...</div>;
   if (!user) return <Navigate to="/login" />;
   return children;
 };
 
 function App() {
+  console.log('App Rendering');
   return (
     <AuthProvider>
       <SocketProvider>

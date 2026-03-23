@@ -7,7 +7,19 @@
     <title>client</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <h1 style="color: red; text-align: center; margin-top: 50px;">If you see this, React didn't mount.</h1>
+    </div>
+    <script>
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        document.body.innerHTML += '<div style="color: red; padding: 20px; background: white; position: fixed; top: 0; left: 0; z-index: 9999;">' +
+          '<b>JavaScript Error:</b> ' + msg + '<br>' +
+          '<b>URL:</b> ' + url + '<br>' +
+          '<b>Line:</b> ' + lineNo + ':' + columnNo +
+          '</div>';
+        return false;
+      };
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
