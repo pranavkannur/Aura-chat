@@ -11,9 +11,11 @@ const missingEnv = requiredEnv.filter(env => !process.env[env]);
 
 if (missingEnv.length > 0) {
   console.error(`CRITICAL: Missing environment variables: ${missingEnv.join(', ')}`);
-  console.error('Please set these in your .env file or deployment dashboard.');
   process.exit(1);
 }
+
+const app = express();
+const server = http.createServer(app);
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -32,6 +34,7 @@ const corsOptions = {
     ) {
       callback(null, true);
     } else {
+      console.warn(`CORS Blocked origin: ${origin}`);
       callback(new Error("Not allowed by CORS"));
     }
   },
@@ -39,14 +42,6 @@ const corsOptions = {
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"]
 };
-
-const app = express();
-const server = http.createServer(app);
-
-// Initialize Socket.io
-const io = initSocket(server, corsOptions);
-
-const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors(corsOptions));
@@ -56,17 +51,29 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/messages', require('./routes/message.routes'));
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("Global Error Handler:", err);
+  res.status(500).json({ message: "Internal Server Error", error: err.message });
+});
+
+// Initialize Socket.io
+initSocket(server, corsOptions);
+
+const PORT = process.env.PORT || 5001;
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('Successfully connected to MongoDB'))
+  .then(() => {
+    console.log('Successfully connected to MongoDB');
+    if (require.main === module) {
+      server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+    }
+  })
   .catch(err => {
     console.error('CRITICAL: MongoDB connection failed!');
     console.error(err);
     process.exit(1);
   });
 
-module.exports = { app, server, io };
-
-if (require.main === module) {
-  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-}
+module.exports = { app, server };
