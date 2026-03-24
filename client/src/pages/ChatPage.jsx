@@ -73,22 +73,30 @@ const ChatPage = () => {
     }
   }, [socket, selectedUser]);
 
+  const [isSending, setIsSending] = useState(false);
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedUser) return;
+    if (!newMessage.trim() || !selectedUser || isSending) return;
+
+    setIsSending(true);
+    const messageContent = newMessage;
+    setNewMessage(''); // Clear input immediately for better UX
 
     try {
       const { data } = await axios.post('/api/messages', {
         receiverId: selectedUser._id,
-        content: newMessage
+        content: messageContent
       }, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
       
       setMessages((prev) => [...prev, data]);
-      setNewMessage('');
     } catch (err) {
       console.error('Failed to send message', err);
+      setNewMessage(messageContent); // Restore text if send fails
+    } finally {
+      setIsSending(false);
     }
   };
 
