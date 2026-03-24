@@ -34,7 +34,13 @@ app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/messages', require('./routes/message.routes'));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
+const mongoUri = process.env.MONGO_URI;
+if (!mongoUri) {
+  console.error('CRITICAL: MONGO_URI is not defined in environment variables!');
+  process.exit(1);
+}
+
+mongoose.connect(mongoUri)
   .then(() => console.log('Successfully connected to MongoDB'))
   .catch(err => console.error('CRITICAL: MongoDB connection failed!', err));
 
