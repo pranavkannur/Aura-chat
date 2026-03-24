@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -12,7 +12,15 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const fetchUsers = useCallback(async (query = '') => {
     try {
@@ -63,15 +71,23 @@ const ChatPage = () => {
   useEffect(() => {
     if (socket) {
       const handleNewMessage = (data) => {
-        if (selectedUser && data.senderId === selectedUser._id) {
-          setMessages((prev) => [...prev, data]);
+        // Only add if message belongs to current conversation
+        const isFromSelected = selectedUser && data.senderId === selectedUser._id;
+        const isToSelected = selectedUser && data.receiverId === selectedUser._id;
+        
+        if (isFromSelected || (isToSelected && data.senderId === user._id)) {
+          // Check if message already exists (prevent duplicates if axios update also happens)
+          setMessages((prev) => {
+            if (prev.find(m => m._id === data._id)) return prev;
+            return [...prev, data];
+          });
         }
       };
       
       socket.on('newMessage', handleNewMessage);
       return () => socket.off('newMessage', handleNewMessage);
     }
-  }, [socket, selectedUser]);
+  }, [socket, selectedUser, user._id]);
 
   const [isSending, setIsSending] = useState(false);
 
@@ -81,7 +97,7 @@ const ChatPage = () => {
 
     setIsSending(true);
     const messageContent = newMessage;
-    setNewMessage(''); // Clear input immediately for better UX
+    setNewMessage(''); 
 
     try {
       const { data } = await axios.post('/api/messages', {
@@ -91,10 +107,11 @@ const ChatPage = () => {
         headers: { Authorization: `Bearer ${user.token}` }
       });
       
+      // Update local state immediately
       setMessages((prev) => [...prev, data]);
     } catch (err) {
       console.error('Failed to send message', err);
-      setNewMessage(messageContent); // Restore text if send fails
+      setNewMessage(messageContent);
     } finally {
       setIsSending(false);
     }
@@ -111,7 +128,6 @@ const ChatPage = () => {
           </button>
         </div>
 
-        {/* Search Bar */}
         <div className="p-4 border-b border-aura-forest/10">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-aura-light/30" size={18} />
@@ -198,6 +214,7 @@ const ChatPage = () => {
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             <form onSubmit={handleSendMessage} className="p-4 border-t border-aura-forest/20 flex gap-2">
@@ -210,7 +227,8 @@ const ChatPage = () => {
               />
               <button
                 type="submit"
-                className="bg-aura-forest text-aura-dark p-2 rounded-xl hover:bg-aura-forest/80 transition-all active:scale-95"
+                disabled={isSending}
+                className={`bg-aura-forest text-aura-dark p-2 rounded-xl transition-all active:scale-95 ${isSending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-aura-forest/80'}`}
               >
                 <Send size={24} />
               </button>
