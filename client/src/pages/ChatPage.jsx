@@ -15,12 +15,15 @@ const ChatPage = () => {
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
+  // Scroll whenever messages change or a user is selected
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, selectedUser]);
 
   const fetchUsers = useCallback(async (query = '') => {
     try {
