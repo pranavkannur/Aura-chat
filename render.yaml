@@ -9,3 +9,9 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 22.22.0
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://aura-test1.netlify.app
