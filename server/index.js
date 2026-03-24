@@ -6,12 +6,26 @@ const cors = require('cors');
 const { initSocket } = require('./socket');
 
 const corsOptions = {
-  origin: [
-    "http://localhost:5173", 
-    "http://localhost:5174", 
-    "https://aura-test1.netlify.app",
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://aura-test1.netlify.app",
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith(".netlify.app") // This allows all Netlify preview/branch deploys
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"]
