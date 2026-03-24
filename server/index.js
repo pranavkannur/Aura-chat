@@ -47,18 +47,12 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Initialize Socket.io - MUST be before routes
+initSocket(server, corsOptions);
+
 // Routes
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/messages', require('./routes/message.routes'));
-
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error("Global Error Handler:", err);
-  res.status(500).json({ message: "Internal Server Error", error: err.message });
-});
-
-// Initialize Socket.io
-initSocket(server, corsOptions);
 
 const PORT = process.env.PORT || 5001;
 
