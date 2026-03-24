@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: aura-chat-api
+    env: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
