@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { LogOut, Send, User as UserIcon, Search, X } from 'lucide-react';
+import { LogOut, Send, User as UserIcon, Search, X, ChevronLeft } from 'lucide-react';
 
 const ChatPage = () => {
   const { user, logout } = useAuth();
@@ -20,7 +20,6 @@ const ChatPage = () => {
     }
   };
 
-  // Scroll whenever messages change or a user is selected
   useEffect(() => {
     scrollToBottom();
   }, [messages, selectedUser]);
@@ -74,12 +73,10 @@ const ChatPage = () => {
   useEffect(() => {
     if (socket) {
       const handleNewMessage = (data) => {
-        // Only add if message belongs to current conversation
         const isFromSelected = selectedUser && data.senderId === selectedUser._id;
         const isToSelected = selectedUser && data.receiverId === selectedUser._id;
         
         if (isFromSelected || (isToSelected && data.senderId === user._id)) {
-          // Check if message already exists (prevent duplicates if axios update also happens)
           setMessages((prev) => {
             if (prev.find(m => m._id === data._id)) return prev;
             return [...prev, data];
@@ -110,7 +107,6 @@ const ChatPage = () => {
         headers: { Authorization: `Bearer ${user.token}` }
       });
       
-      // Update local state immediately
       setMessages((prev) => [...prev, data]);
     } catch (err) {
       console.error('Failed to send message', err);
@@ -121,9 +117,11 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-aura-dark overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-80 border-r border-aura-forest/20 flex flex-col">
+    <div className="flex h-[100dvh] bg-aura-dark overflow-hidden relative">
+      {/* Sidebar - Hidden on mobile if a user is selected */}
+      <div className={`w-full md:w-80 border-r border-aura-forest/20 flex flex-col transition-all duration-300 ${
+        selectedUser ? 'hidden md:flex' : 'flex'
+      }`}>
         <div className="p-4 border-b border-aura-forest/20 flex justify-between items-center">
           <h1 className="text-xl font-bold text-aura-light">Aura Chat</h1>
           <button onClick={logout} className="text-aura-light/50 hover:text-red-400 transition-colors">
@@ -162,16 +160,16 @@ const ChatPage = () => {
                   selectedUser?._id === u._id ? 'bg-aura-forest/20' : 'hover:bg-white/5'
                 }`}
               >
-                <div className="relative">
-                  <div className="w-10 h-10 bg-aura-deep rounded-full flex items-center justify-center text-aura-light">
-                    <UserIcon size={20} />
+                <div className="relative flex-shrink-0">
+                  <div className="w-12 h-12 bg-aura-deep rounded-full flex items-center justify-center text-aura-light">
+                    <UserIcon size={24} />
                   </div>
                   {onlineUsers.includes(u._id) && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-aura-dark rounded-full"></div>
+                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-aura-dark rounded-full"></div>
                   )}
                 </div>
-                <div>
-                  <p className="text-aura-light font-medium">{u.username}</p>
+                <div className="min-w-0">
+                  <p className="text-aura-light font-medium truncate">{u.username}</p>
                   <p className="text-xs text-aura-light/40">{onlineUsers.includes(u._id) ? 'Online' : 'Offline'}</p>
                 </div>
               </div>
@@ -186,16 +184,26 @@ const ChatPage = () => {
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Chat Area - Hidden on mobile if no user is selected */}
+      <div className={`flex-1 flex flex-col h-full transition-all duration-300 ${
+        selectedUser ? 'flex' : 'hidden md:flex'
+      }`}>
         {selectedUser ? (
           <>
-            <div className="p-4 border-b border-aura-forest/20 flex items-center gap-3">
-              <div className="w-10 h-10 bg-aura-deep rounded-full flex items-center justify-center text-aura-light font-bold">
+            <div className="p-3 md:p-4 border-b border-aura-forest/20 flex items-center gap-2 md:gap-3">
+              {/* Back button for mobile */}
+              <button 
+                onClick={() => setSelectedUser(null)}
+                className="md:hidden p-1 text-aura-light/60 hover:text-aura-light"
+              >
+                <ChevronLeft size={28} />
+              </button>
+              
+              <div className="w-10 h-10 bg-aura-deep rounded-full flex items-center justify-center text-aura-light font-bold flex-shrink-0">
                 {selectedUser.username[0].toUpperCase()}
               </div>
-              <div>
-                <h2 className="text-aura-light font-bold">{selectedUser.username}</h2>
+              <div className="min-w-0">
+                <h2 className="text-aura-light font-bold truncate">{selectedUser.username}</h2>
                 <p className="text-xs text-aura-light/40">{onlineUsers.includes(selectedUser._id) ? 'Online' : 'Offline'}</p>
               </div>
             </div>
@@ -204,13 +212,13 @@ const ChatPage = () => {
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.senderId === user._id ? 'justify-end' : 'justify-start'}`}>
                   <div
-                    className={`max-w-[70%] p-3 rounded-2xl ${
+                    className={`max-w-[85%] md:max-w-[70%] p-3 rounded-2xl ${
                       msg.senderId === user._id
                         ? 'bg-aura-forest text-aura-dark rounded-tr-none'
                         : 'bg-aura-deep/30 text-aura-light rounded-tl-none border border-aura-forest/20'
                     }`}
                   >
-                    <p>{msg.content}</p>
+                    <p className="text-sm md:text-base break-words">{msg.content}</p>
                     <p className="text-[10px] mt-1 opacity-50 text-right">
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -220,25 +228,25 @@ const ChatPage = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="p-4 border-t border-aura-forest/20 flex gap-2">
+            <form onSubmit={handleSendMessage} className="p-3 md:p-4 border-t border-aura-forest/20 flex gap-2">
               <input
                 type="text"
                 placeholder="Type a message..."
-                className="flex-1 bg-aura-deep/10 border border-aura-forest/30 rounded-xl px-4 py-2 text-aura-light focus:outline-none focus:border-aura-forest transition-colors"
+                className="flex-1 bg-aura-deep/10 border border-aura-forest/30 rounded-xl px-4 py-2 text-aura-light focus:outline-none focus:border-aura-forest transition-colors text-sm md:text-base"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
               />
               <button
                 type="submit"
                 disabled={isSending}
-                className={`bg-aura-forest text-aura-dark p-2 rounded-xl transition-all active:scale-95 ${isSending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-aura-forest/80'}`}
+                className={`bg-aura-forest text-aura-dark p-2 rounded-xl transition-all active:scale-95 flex-shrink-0 ${isSending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-aura-forest/80'}`}
               >
                 <Send size={24} />
               </button>
             </form>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-aura-light/20">
+          <div className="flex-1 flex flex-col items-center justify-center text-aura-light/20 p-8 text-center">
             <h2 className="text-2xl font-bold">Select a user to start chatting</h2>
           </div>
         )}
