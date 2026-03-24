@@ -5,6 +5,16 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { initSocket } = require('./socket');
 
+// Validate critical environment variables
+const requiredEnv = ['MONGO_URI', 'JWT_SECRET'];
+const missingEnv = requiredEnv.filter(env => !process.env[env]);
+
+if (missingEnv.length > 0) {
+  console.error(`CRITICAL: Missing environment variables: ${missingEnv.join(', ')}`);
+  console.error('Please set these in your .env file or deployment dashboard.');
+  process.exit(1);
+}
+
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
@@ -14,12 +24,11 @@ const corsOptions = {
       process.env.FRONTEND_URL
     ].filter(Boolean);
 
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
 
     if (
       allowedOrigins.includes(origin) ||
-      origin.endsWith(".netlify.app") // This allows all Netlify preview/branch deploys
+      origin.endsWith(".netlify.app")
     ) {
       callback(null, true);
     } else {
@@ -48,15 +57,13 @@ app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/messages', require('./routes/message.routes'));
 
 // MongoDB Connection
-const mongoUri = process.env.MONGO_URI;
-if (!mongoUri) {
-  console.error('CRITICAL: MONGO_URI is not defined in environment variables!');
-  process.exit(1);
-}
-
-mongoose.connect(mongoUri)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Successfully connected to MongoDB'))
-  .catch(err => console.error('CRITICAL: MongoDB connection failed!', err));
+  .catch(err => {
+    console.error('CRITICAL: MongoDB connection failed!');
+    console.error(err);
+    process.exit(1);
+  });
 
 module.exports = { app, server, io };
 
