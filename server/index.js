@@ -22,7 +22,7 @@ const corsOptions = {
     const allowedOrigins = [
       "http://localhost:5173",
       "http://localhost:5174",
-      "https://aura-test1.netlify.app",
+      "https://aura-test2.netlify.app",
       process.env.FRONTEND_URL
     ].filter(Boolean);
 
